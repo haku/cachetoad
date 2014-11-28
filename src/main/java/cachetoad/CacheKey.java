@@ -37,7 +37,7 @@ public class CacheKey {
 	}
 
 	public String id () {
-		if (this.id == null) this.id = Hashing.sha1().hashUnencodedChars(this.uri).toString();
+		if (this.id == null) this.id = Hashing.sha1().hashUnencodedChars(this.uri).toString(); // TODO include method?
 		return this.id;
 	}
 
