@@ -21,14 +21,14 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.cache.LoadingCache;
 
-class CacheHandler extends AbstractHandler {
+class RequestHandler extends AbstractHandler {
 
-	private static final Logger LOG = LoggerFactory.getLogger(CacheHandler.class);
+	private static final Logger LOG = LoggerFactory.getLogger(RequestHandler.class);
 
 	private final LoadingCache<CacheKey, Boolean> cache;
 	private final File baseDir;
 
-	public CacheHandler (final LoadingCache<CacheKey, Boolean> cache, final File baseDir) {
+	public RequestHandler (final LoadingCache<CacheKey, Boolean> cache, final File baseDir) {
 		this.cache = cache;
 		this.baseDir = baseDir;
 	}

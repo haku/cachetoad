@@ -70,7 +70,7 @@ public class Main {
 		final ServerConnector connector = new ServerConnector(server);
 		connector.setPort(this.args.getBindPort());
 		server.addConnector(connector);
-		server.setHandler(new CacheHandler(cache, baseDir));
+		server.setHandler(new RequestHandler(cache, baseDir));
 		server.start();
 		LOG.info("listening: {}", connector.getPort());
 
