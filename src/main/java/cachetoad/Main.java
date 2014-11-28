@@ -57,10 +57,9 @@ public class Main {
 		final File baseDir = this.args.getCacheDir();
 		if (!baseDir.mkdirs() && !baseDir.exists()) throw new IOException("Can not make: " + baseDir.getAbsolutePath());
 		LOG.info("baseDir: {}", baseDir);
-		final LoadingCache<CacheKey, Boolean> cache = CacheBuilder.newBuilder()
-				// TODO expire rules!
-				.expireAfterWrite(1, TimeUnit.HOURS)
-				.build(new HttpFetcher(httpClient, this.args.getOrigin()));
+		final LoadingCache<CacheKey, CachedMetadata> cache = CacheBuilder.newBuilder()
+				.expireAfterWrite(10, TimeUnit.MINUTES)
+				.build(new HttpFetchingLoader(httpClient, this.args.getOrigin()));
 
 		final QueuedThreadPool jettyThreadPool = new QueuedThreadPool();
 		jettyThreadPool.setDaemon(true);

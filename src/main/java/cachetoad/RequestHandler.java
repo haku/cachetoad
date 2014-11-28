@@ -1,9 +1,7 @@
 package cachetoad;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.ExecutionException;
@@ -25,10 +23,10 @@ class RequestHandler extends AbstractHandler {
 
 	private static final Logger LOG = LoggerFactory.getLogger(RequestHandler.class);
 
-	private final LoadingCache<CacheKey, Boolean> cache;
+	private final LoadingCache<CacheKey, CachedMetadata> cache;
 	private final File baseDir;
 
-	public RequestHandler (final LoadingCache<CacheKey, Boolean> cache, final File baseDir) {
+	public RequestHandler (final LoadingCache<CacheKey, CachedMetadata> cache, final File baseDir) {
 		this.cache = cache;
 		this.baseDir = baseDir;
 	}
@@ -48,20 +46,8 @@ class RequestHandler extends AbstractHandler {
 
 		try {
 			final CacheKey key = new CacheKey(method, requestUri, this.baseDir);
-			this.cache.get(key);
-
-			try (final BufferedReader r = new BufferedReader(new FileReader(key.cacheFileHeaders()))) {
-				resp.setStatus(Integer.parseInt(r.readLine()));
-				String line;
-				while ((line = r.readLine()) != null) {
-					if (line.length() < 1) continue;
-					int x = line.indexOf(" ");
-					if (x < 1) continue;
-					String name = line.substring(0, x);
-					String value = line.substring(x + 1);
-					resp.addHeader(name, value);
-				}
-			}
+			final CachedMetadata meta = this.cache.get(key);
+			meta.writeTo(resp);
 
 			int bodyLength = -1;
 			try (final InputStream is = new FileInputStream(key.cacheFileBody())) {
