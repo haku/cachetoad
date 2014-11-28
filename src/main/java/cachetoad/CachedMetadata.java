@@ -80,6 +80,10 @@ public class CachedMetadata {
 		return this.expiresMillis > System.currentTimeMillis();
 	}
 
+	public long secondsRemaining () {
+		return TimeUnit.MILLISECONDS.toSeconds(this.expiresMillis - System.currentTimeMillis());
+	}
+
 	public void writeTo (final HttpServletResponse resp) {
 		resp.setStatus(this.status);
 		for (final Header header : this.headers) {

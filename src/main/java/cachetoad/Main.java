@@ -19,6 +19,8 @@ import com.google.common.cache.LoadingCache;
 
 public class Main {
 
+	public static final long CACHE_RECHECK_SECONDS = TimeUnit.MINUTES.toSeconds(10);
+
 	private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
 	private final Args args;
@@ -57,9 +59,17 @@ public class Main {
 		final File baseDir = this.args.getCacheDir();
 		if (!baseDir.mkdirs() && !baseDir.exists()) throw new IOException("Can not make: " + baseDir.getAbsolutePath());
 		LOG.info("baseDir: {}", baseDir);
+
+		final HttpFetchingLoader fetchingLoader = new HttpFetchingLoader(httpClient, this.args.getOrigin());
 		final LoadingCache<CacheKey, CachedMetadata> cache = CacheBuilder.newBuilder()
-				.expireAfterWrite(10, TimeUnit.MINUTES)
-				.build(new HttpFetchingLoader(httpClient, this.args.getOrigin()));
+				.expireAfterWrite(CACHE_RECHECK_SECONDS, TimeUnit.SECONDS) // Look at the disc at least this often.
+				.build(fetchingLoader);
+		final CacheExpirer<CacheKey> cacheExpirer = new CacheExpirer<>(cache);
+		fetchingLoader.setCacheExpirer(cacheExpirer); // Dam circular references.
+
+		final Thread cacheExpirerThread = new Thread(cacheExpirer);
+		cacheExpirerThread.setDaemon(true);
+		cacheExpirerThread.start();
 
 		final QueuedThreadPool jettyThreadPool = new QueuedThreadPool();
 		jettyThreadPool.setDaemon(true);

@@ -19,9 +19,15 @@ class HttpFetchingLoader extends CacheLoader<CacheKey, CachedMetadata> {
 	private final HttpClient httpClient;
 	private final URI origin;
 
+	private CacheExpirer<CacheKey> cacheExpirer;
+
 	public HttpFetchingLoader (final HttpClient httpClient, final URI origin) {
 		this.httpClient = httpClient;
 		this.origin = origin;
+	}
+
+	public void setCacheExpirer (final CacheExpirer<CacheKey> cacheExpirer) {
+		this.cacheExpirer = cacheExpirer;
 	}
 
 	@Override
@@ -30,9 +36,16 @@ class HttpFetchingLoader extends CacheLoader<CacheKey, CachedMetadata> {
 
 		String reason = "cold";
 		if (key.isCached()) {
-			final CachedMetadata meta = CachedMetadata.fromFile(key.cacheFileHeaders());
-			if (meta.isValid()) return meta;
 			reason = "expired";
+
+			final CachedMetadata meta = CachedMetadata.fromFile(key.cacheFileHeaders());
+			if (meta.isValid()) {
+				final long secondsRemaining = meta.secondsRemaining();
+				if (secondsRemaining < Main.CACHE_RECHECK_SECONDS) {
+					this.cacheExpirer.scheduleExpire(key, secondsRemaining);
+				}
+				return meta;
+			}
 		}
 
 		final long startTime = System.nanoTime();
@@ -42,6 +55,11 @@ class HttpFetchingLoader extends CacheLoader<CacheKey, CachedMetadata> {
 		final long fetchTime = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
 		LOG.info("{} ({}, fetch={}ms, max-age={}s)", key, reason, fetchTime, maxAgeSeconds);
 
+		if (maxAgeSeconds < Main.CACHE_RECHECK_SECONDS) {
+			this.cacheExpirer.scheduleExpire(key, Math.max(1, maxAgeSeconds));
+		}
+
 		return CachedMetadata.fromFile(key.cacheFileHeaders());
 	}
+
 }
