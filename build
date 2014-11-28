@@ -1,0 +1,6 @@
+#!/bin/bash
+set -eu
+
+BASEDIR=$(dirname $0)
+
+mvn clean install -f "$BASEDIR/pom.xml"
